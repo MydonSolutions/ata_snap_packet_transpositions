@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
 			+ p_packet->snaphdr.timestamp*time_byte_stride // offset for time
 			+ (p_packet->snaphdr.feng_id*SYNTH_NCHAN + (p_packet->snaphdr.chan-SYNTH_SCHAN))*channel_byte_stride; // offset for frequency	
 		pkt_payload = (uint8_t *)p_packet->payload;
-		N_copy_packet_payload_to_ftp(1, payload_dest, pkt_payload, SYNTH_PKTNCHAN, channel_byte_stride, time_byte_stride);
+		copy_packet_payload_to_ftp(payload_dest, pkt_payload, SYNTH_PKTNCHAN, channel_byte_stride, time_byte_stride);
 	}
 
 	test_passed = 1;
@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) {
 			+ p_packet->snaphdr.timestamp*time_byte_stride // offset for time
 			+ (p_packet->snaphdr.feng_id*SYNTH_NCHAN + (p_packet->snaphdr.chan-SYNTH_SCHAN))*channel_byte_stride; // offset for frequency	
 		pkt_payload = (uint8_t *)p_packet->payload;
-		N_copy_packet_payload_to_tfp(1, payload_dest, pkt_payload, SYNTH_PKTNCHAN, channel_byte_stride, time_byte_stride);
+		copy_packet_payload_to_tfp(payload_dest, pkt_payload, SYNTH_PKTNCHAN, channel_byte_stride, time_byte_stride);
 	}
 
 	test_passed = 1;
@@ -141,7 +141,7 @@ int main(int argc, char* argv[]) {
 			+ p_packet->snaphdr.timestamp*time_byte_stride // offset for time
 			+ (p_packet->snaphdr.feng_id*SYNTH_NCHAN + (p_packet->snaphdr.chan-SYNTH_SCHAN))*channel_byte_stride; // offset for frequency	
 		pkt_payload = (uint8_t *)p_packet->payload;
-		N_copy_packet_payload_to_tfp_dp4a(1, payload_dest, pkt_payload, SYNTH_PKTNCHAN, channel_byte_stride, time_byte_stride);
+		copy_packet_payload_to_tfp_dp4a(payload_dest, pkt_payload, SYNTH_PKTNCHAN, channel_byte_stride, time_byte_stride);
 	}
 
 	test_passed = 1;

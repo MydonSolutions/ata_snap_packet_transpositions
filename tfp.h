@@ -14,8 +14,8 @@
 
 static inline void set_output_byte_strides_tfp(
 	const size_t time_per_block,
-	size_t *time_byte_stride,
-	size_t *channel_byte_stride
+	size_t *channel_byte_stride,
+	size_t *time_byte_stride
 ) {
 	*channel_byte_stride = ATASNAP_DEFAULT_PKTNPOL*ATASNAP_DEFAULT_SAMPLE_BYTESIZE;
 	*time_byte_stride = SYNTH_NANTS*SYNTH_NCHAN*(*channel_byte_stride);
@@ -28,6 +28,16 @@ static inline void copy_packet_payload_to_tfp(
 	const uint32_t  channel_stride, /*= PIPERBLK*ATASNAP_DEFAULT_PKTIDX_STRIDE/ATASNAP_DEFAULT_PKT_CHAN_BYTE_STRIDE */
 	const uint32_t  time_stride /* Unused as copy strides TIME*POLE */
 ) {
+	// for(int pkt_chan_idx = 0; pkt_chan_idx < pkt_nchan; pkt_chan_idx++){
+	// 	for(int pkt_timeXnpol_idx = 0; pkt_timeXnpol_idx < ATASNAP_DEFAULT_PKTNTIME; pkt_timeXnpol_idx++){
+	// 		memcpy(
+	// 			payload_dest + 
+	// 				pkt_chan_idx*channel_stride + pkt_timeXnpol_idx*time_stride,
+	// 			pkt_payload + (pkt_chan_idx*ATASNAP_DEFAULT_PKTNTIME + pkt_timeXnpol_idx)*ATASNAP_DEFAULT_PKTNPOL*ATASNAP_DEFAULT_SAMPLE_BYTESIZE, 
+	// 			ATASNAP_DEFAULT_PKTNPOL*ATASNAP_DEFAULT_SAMPLE_BYTESIZE 
+	// 		);
+	// 	}
+	// }
 	for(int pkt_npol_sample_idx = 0; pkt_npol_sample_idx < pkt_nchan*ATASNAP_DEFAULT_PKTNTIME; pkt_npol_sample_idx++){ 
 		memcpy(
 			payload_dest +

@@ -18,8 +18,8 @@
 
 static inline void set_output_byte_strides_tfp_dp4a(
 	const size_t time_per_block,
-	size_t *time_byte_stride,
-	size_t *channel_byte_stride
+	size_t *channel_byte_stride,
+	size_t *time_byte_stride
 ) {
 	*channel_byte_stride = ATASNAP_DEFAULT_PKTNPOL*4*ATASNAP_DEFAULT_SAMPLE_BYTESIZE; // `*4` keeps databuf offset logic uniform
 	*time_byte_stride = SYNTH_NANTS*SYNTH_NCHAN*(*channel_byte_stride)/4; // `/4` keeps databuf offset logic uniform

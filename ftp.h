@@ -24,7 +24,7 @@ static inline void set_output_byte_strides_ftp(
 
 static inline void copy_packet_payload_to_ftp(
 	uint8_t*  payload_dest,/*Indexed into [FENG, PKT_SCHAN, PKTIDX, 0, 0]*/
-	const uint8_t*  pkt_payload,
+	uint8_t*  pkt_payload,
 	const uint16_t  pkt_nchan,
 	const uint32_t  channel_stride, /*= PIPERBLK*ATASNAP_DEFAULT_PKTIDX_STRIDE/ATASNAP_DEFAULT_PKT_CHAN_BYTE_STRIDE */
 	const uint32_t  time_stride /* Unused as copy strides TIME*POLE */

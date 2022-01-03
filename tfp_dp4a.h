@@ -26,11 +26,12 @@ static inline void set_output_byte_strides_tfp_dp4a(
 	*time_byte_stride = SYNTH_NANTS*SYNTH_NCHAN*(*channel_byte_stride)/4; // `/4` keeps databuf offset logic uniform
 }
 
-typedef uint8_t PKT_DCP_TFP_DP4A_T; // this is the width of the one component of the complex sample (8+8i = 16bit)/2 = 8bit
+// this is the width of the one component of the complex sample (8+8i = 16bit)/2 = 8bit
+#define PKT_DCP_TFP_DP4A_T uint8_t
 
 static inline void copy_packet_payload_to_tfp_dp4a(
 	uint8_t*  payload_dest,/*Indexed into [FENG, PKT_SCHAN, PKTIDX, 0, 0]*/
-	const uint8_t*  pkt_payload,
+	uint8_t*  pkt_payload,
 	const uint16_t  pkt_nchan,
 	const uint32_t  channel_stride, /*= PIPERBLK*ATASNAP_DEFAULT_PKTIDX_STRIDE/ATASNAP_DEFAULT_PKT_CHAN_BYTE_STRIDE */
 	const uint32_t  time_stride /* Unused as copy strides TIME*POLE */
@@ -81,10 +82,15 @@ static inline void copy_packet_payload_to_tfp_dp4a_direct(
 	}
 }
 
-
 static packet_unpack_candidate_t tfp_dp4a_unpack_candidate = {
 	"TFP_DP4A",
 	copy_packet_payload_to_tfp_dp4a,
+	set_output_byte_strides_tfp_dp4a
+};
+
+static packet_unpack_candidate_t tfp_dp4a_direct_unpack_candidate = {
+	"TFP_DP4A_DIRECT",
+	copy_packet_payload_to_tfp_dp4a_direct,
 	set_output_byte_strides_tfp_dp4a
 };
 

@@ -111,11 +111,12 @@ int main(int argc, char* argv[]) {
 	const packet_unpack_candidate_t candidates[] = {
 		ftp_unpack_candidate,
 		tfp_unpack_candidate,
-		tfp_dp4a_unpack_candidate
+		tfp_dp4a_unpack_candidate,
+		tfp_dp4a_direct_unpack_candidate
 	};
 
   struct timespec ts_timeout = {0};
-	ts_timeout.tv_sec = 10;
+	ts_timeout.tv_sec = 30;
 	float timeout_ms = ((float) ts_timeout.tv_sec*1e9 + ts_timeout.tv_nsec)/(1e6);
 
 	size_t nblocks = 0;

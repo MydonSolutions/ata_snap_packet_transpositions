@@ -13,7 +13,7 @@ typedef struct {
 	int databuf_packet_size;
 	void (*copy_func)(
 		uint8_t*  payload_dest,
-		const uint8_t*  pkt_payload,
+		uint8_t*  pkt_payload,
 		const uint16_t  pkt_nchan,
 		const uint32_t  channel_stride,
 		const uint32_t  time_stride);
@@ -27,7 +27,7 @@ typedef struct {
 	char* title;
 	void (*copy_func)(
 		uint8_t*  payload_dest,
-		const uint8_t*  pkt_payload,
+		uint8_t*  pkt_payload,
 		const uint16_t  pkt_nchan,
 		const uint32_t  channel_stride,
 		const uint32_t  time_stride);

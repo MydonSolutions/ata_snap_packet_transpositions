@@ -114,17 +114,23 @@ int main(int argc, char* argv[]) {
 		tfp_dp4a_unpack_candidate
 	};
 
+  struct timespec ts_timeout = {0};
+	ts_timeout.tv_sec = 5;
 	for (size_t c = 0; c < sizeof(candidates)/sizeof(packet_unpack_candidate_t); c++)
 	{
 		unpack_struct.copy_func = candidates[c].copy_func;
 		unpack_struct.byte_stride_func = candidates[c].byte_stride_func;
 		memset(databuf_out, 0, BLOCK_DATA_SIZE);
 		unpack_packet_buffer(&unpack_struct);
-		verify_unpacked_buffer(
-			PAYLOAD_BYTE_VALUE,
-			&unpack_struct,
-			candidates[c].title
-		);
+		if (verify_unpacked_buffer(
+				PAYLOAD_BYTE_VALUE,
+				&unpack_struct,
+				candidates[c].title
+			)
+		) {
+			printf("%s: %lu rounds in 5 seconds\n", candidates[c].title, unpack_packet_buffer_repeatedly(&unpack_struct, ts_timeout));
+		}
+
 	}
 
 	// Close: free memory

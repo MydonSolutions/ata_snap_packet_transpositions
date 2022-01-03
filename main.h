@@ -67,7 +67,7 @@ static inline size_t unpack_packet_buffer_repeatedly(
     nrounds ++;
     clock_gettime(CLOCK_MONOTONIC, &ts_now);
 
-  } while (ts_now.tv_sec < ts_end.tv_sec && ts_now.tv_nsec < ts_end.tv_nsec);
+  } while (ts_now.tv_sec*1e9 + ts_now.tv_nsec < ts_end.tv_sec*1e9 + ts_end.tv_nsec);
   return nrounds;
 }
 

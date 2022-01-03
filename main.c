@@ -115,7 +115,10 @@ int main(int argc, char* argv[]) {
 	};
 
   struct timespec ts_timeout = {0};
-	ts_timeout.tv_sec = 5;
+	ts_timeout.tv_sec = 10;
+	float timeout_ms = ((float) ts_timeout.tv_sec*1e9 + ts_timeout.tv_nsec)/(1e6);
+
+	size_t nblocks = 0;
 	for (size_t c = 0; c < sizeof(candidates)/sizeof(packet_unpack_candidate_t); c++)
 	{
 		unpack_struct.copy_func = candidates[c].copy_func;
@@ -128,7 +131,8 @@ int main(int argc, char* argv[]) {
 				candidates[c].title
 			)
 		) {
-			printf("%s: %lu rounds in 5 seconds\n", candidates[c].title, unpack_packet_buffer_repeatedly(&unpack_struct, ts_timeout));
+			nblocks = unpack_packet_buffer_repeatedly(&unpack_struct, ts_timeout);
+			printf("%s: %lu blocks in %0.3f ms (%0.3f ms per block)\n", candidates[c].title, nblocks, timeout_ms, timeout_ms/nblocks);
 		}
 
 	}

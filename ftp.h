@@ -3,6 +3,7 @@
 
 #include "ata.h"
 #include <string.h>
+#include "packet_unpack_struct.h"
 
 // to FTP input:
 //    [Slowest ---> Fastest]
@@ -51,5 +52,11 @@ static inline void copy_packet_payload_to_ftp_direct(
 		payload_dest += channel_stride;
 	}
 }
+
+static packet_unpack_candidate_t ftp_unpack_candidate = {
+	"FTP",
+	copy_packet_payload_to_ftp,
+	set_output_byte_strides_ftp
+};
 
 #endif

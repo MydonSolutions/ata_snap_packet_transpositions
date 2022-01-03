@@ -83,6 +83,7 @@ int main(int argc, char* argv[]) {
 	ata_ibv_pkt_bytes = malloc(databuf_packet_size);
 	memset(ata_ibv_pkt_bytes, 0, databuf_packet_size);
 
+	// Setup: write packets
 	ata_ibv_pkt = (struct ata_snap_ibv_pkt *) ata_ibv_pkt_bytes;
 	ata_ibv_pkt->snaphdr.n_chans = SYNTH_PKTNCHAN;
 	ata_ibv_pkt->snaphdr.version = 42;
@@ -106,38 +107,25 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	
-	// Test: FTP
-	unpack_struct.copy_func = copy_packet_payload_to_ftp;
-	unpack_struct.byte_stride_func = set_output_byte_strides_ftp;
-	memset(databuf_out, 0, BLOCK_DATA_SIZE);
-	unpack_packet_buffer(&unpack_struct);
-	verify_unpacked_buffer(
-		PAYLOAD_BYTE_VALUE,
-		&unpack_struct,
-		"FTP"
-	);
-	
-	// Test: TFP
-	unpack_struct.copy_func = copy_packet_payload_to_tfp;
-	unpack_struct.byte_stride_func = set_output_byte_strides_tfp;
-	memset(databuf_out, 0, BLOCK_DATA_SIZE);
-	unpack_packet_buffer(&unpack_struct);
-	verify_unpacked_buffer(
-		PAYLOAD_BYTE_VALUE,
-		&unpack_struct,
-		"TFP"
-	);
-	
-	// Test: TFP_DP4A
-	unpack_struct.copy_func = copy_packet_payload_to_tfp_dp4a;
-	unpack_struct.byte_stride_func = set_output_byte_strides_tfp_dp4a;
-	memset(databuf_out, 0, BLOCK_DATA_SIZE);
-	unpack_packet_buffer(&unpack_struct);
-	verify_unpacked_buffer(
-		PAYLOAD_BYTE_VALUE,
-		&unpack_struct,
-		"TFP_DP4A"
-	);
+	// Tests
+	const packet_unpack_candidate_t candidates[] = {
+		ftp_unpack_candidate,
+		tfp_unpack_candidate,
+		tfp_dp4a_unpack_candidate
+	};
+
+	for (size_t c = 0; c < sizeof(candidates)/sizeof(packet_unpack_candidate_t); c++)
+	{
+		unpack_struct.copy_func = candidates[c].copy_func;
+		unpack_struct.byte_stride_func = candidates[c].byte_stride_func;
+		memset(databuf_out, 0, BLOCK_DATA_SIZE);
+		unpack_packet_buffer(&unpack_struct);
+		verify_unpacked_buffer(
+			PAYLOAD_BYTE_VALUE,
+			&unpack_struct,
+			candidates[c].title
+		);
+	}
 
 	// Close: free memory
 	free(databuf_in);

@@ -11,6 +11,7 @@
 
 #include "ata.h"
 #include <string.h>
+#include "packet_unpack_struct.h"
 
 static inline void set_output_byte_strides_tfp(
 	const size_t time_per_block,
@@ -64,5 +65,11 @@ static inline void copy_packet_payload_to_tfp_direct(
 		payload_dest += channel_stride;
 	}
 }
+
+static packet_unpack_candidate_t tfp_unpack_candidate = {
+	"TFP",
+	copy_packet_payload_to_tfp,
+	set_output_byte_strides_tfp
+};
 
 #endif

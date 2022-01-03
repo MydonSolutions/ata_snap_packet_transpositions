@@ -3,7 +3,7 @@ CFLAGS =  -ggdb -fopenmp -fPIC -O3 -Wall -Werror -Wno-error=cpp -fno-strict-alia
 
 anew: clean run
 
-main.o: ata.h main.c main.h ftp.h tfp.h tfp_dp4a.h
+main.o: ata.h main.c main.h ftp.h tfp.h tfp_dp4a.h packet_unpack_struct.h
 	$(GCC) $(CFLAGS) -c $?
 
 main: main.o

@@ -15,6 +15,7 @@
 
 #include "ata.h"
 #include <string.h>
+#include "packet_unpack_struct.h"
 
 static inline void set_output_byte_strides_tfp_dp4a(
 	const size_t time_per_block,
@@ -79,5 +80,12 @@ static inline void copy_packet_payload_to_tfp_dp4a_direct(
 		payload_dest += channel_stride; /*chan offset*/
 	}
 }
+
+
+static packet_unpack_candidate_t tfp_dp4a_unpack_candidate = {
+	"TFP_DP4A",
+	copy_packet_payload_to_tfp_dp4a,
+	set_output_byte_strides_tfp_dp4a
+};
 
 #endif

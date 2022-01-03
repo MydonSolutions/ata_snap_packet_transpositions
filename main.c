@@ -18,13 +18,64 @@
 
 #define BLOCK_DATA_SIZE (120*1024*1024)
 
-int main(int argc, char* argv[]) {
-	// Setup
+int unpack_packet_buffer(
+	uint8_t* databuf_in,
+	uint8_t* databuf_out,
+	size_t effective_payload_per_block,
+	int databuf_packet_size,
+	size_t time_byte_stride,
+	size_t channel_byte_stride,
+	void (*copy_func)(
+		uint8_t*  payload_dest,
+		const uint8_t*  pkt_payload,
+		const uint16_t  pkt_nchan,
+		const uint32_t  channel_stride,
+		const uint32_t  time_stride)
+) {
+	memset(databuf_out, 0, BLOCK_DATA_SIZE);
+	
   struct ata_snap_ibv_pkt *p_packet = NULL;
   uint8_t* payload_dest = NULL;
+	uint8_t *pkt_payload;
 
-	char test_passed = 1;
+	for (size_t i = 0; i < effective_payload_per_block; i++) {
+		p_packet = (struct ata_snap_ibv_pkt *) (databuf_in + i*databuf_packet_size);
+		payload_dest = databuf_out
+			+ p_packet->snaphdr.timestamp*time_byte_stride // offset for time
+			+ (p_packet->snaphdr.feng_id*SYNTH_NCHAN + (p_packet->snaphdr.chan-SYNTH_SCHAN))*channel_byte_stride; // offset for frequency	
+		pkt_payload = (uint8_t *)p_packet->payload;
+		copy_func(payload_dest, pkt_payload, SYNTH_PKTNCHAN, channel_byte_stride, time_byte_stride);
+	}
+	return 0;
+}
+
+int verify_unpacked_buffer(
+	uint8_t* databuf_out,
+	uint8_t expected_data,
+	size_t effective_block_size,
+	size_t time_per_block,
+	size_t time_byte_stride,
+	size_t channel_byte_stride,
+	char* banner_title
+){
 	
+	int test_passed = 1;
+	for (size_t i = 0; i < effective_block_size && test_passed == 1; i++) {
+		if(databuf_out[i] != expected_data) {
+			printf("%s: Test failed at byte %lu (%u != %u).\n", banner_title, i, databuf_out[i], expected_data);
+			printf("\tTime #%lu (Time-per-block = %lu)\n", i/time_byte_stride, time_per_block);
+			printf("\tChannel #%lu (Ant #%lu, Ant-chan %lu)\n", i/channel_byte_stride, (i/channel_byte_stride)/SYNTH_NCHAN, (i/channel_byte_stride)%SYNTH_NCHAN);
+			test_passed = 0;
+		}	
+	}
+	if(test_passed == 1){
+		printf("%s: Test Passed.\n", banner_title);
+	}
+	return test_passed;
+}
+
+int main(int argc, char* argv[]) {
+	// Setup	
 	int databuf_packet_size = sizeof(struct ata_snap_ibv_pkt) + SYNTH_PACKET_PAYLOAD_BYTE_LENGTH;
 	int n_databuf_packets = BLOCK_DATA_SIZE/databuf_packet_size;
 	printf("Padded-packet size: %i\n", databuf_packet_size);
@@ -33,7 +84,6 @@ int main(int argc, char* argv[]) {
 	uint8_t *databuf_in;
 	uint8_t *databuf_out;
 	uint8_t *ata_ibv_pkt_bytes;
-	uint8_t *pkt_payload;
 	struct ata_snap_ibv_pkt *ata_ibv_pkt;
 
 	size_t time_byte_stride;
@@ -84,78 +134,66 @@ int main(int argc, char* argv[]) {
 	
 	// Test: FTP
 	set_output_byte_strides_ftp(time_per_block, &time_byte_stride, &channel_byte_stride);
-	memset(databuf_out, 0, BLOCK_DATA_SIZE);
-	for (size_t i = 0; i < effective_payload_per_block; i++) {
-		p_packet = (struct ata_snap_ibv_pkt *) (databuf_in + i*databuf_packet_size);
-		payload_dest = databuf_out
-			+ p_packet->snaphdr.timestamp*time_byte_stride // offset for time
-			+ (p_packet->snaphdr.feng_id*SYNTH_NCHAN + (p_packet->snaphdr.chan-SYNTH_SCHAN))*channel_byte_stride; // offset for frequency	
-		pkt_payload = (uint8_t *)p_packet->payload;
-		copy_packet_payload_to_ftp(payload_dest, pkt_payload, SYNTH_PKTNCHAN, channel_byte_stride, time_byte_stride);
-	}
-
-	test_passed = 1;
-	for (size_t i = 0; i < effective_block_size && test_passed == 1; i++) {
-		if(databuf_out[i] != PAYLOAD_BYTE_VALUE) {
-			printf("FTP Test failed at byte %lu (%u != %u).\n", i, databuf_out[i], PAYLOAD_BYTE_VALUE);
-			printf("\tTime #%lu (Time-per-block = %lu)\n", i/time_byte_stride, time_per_block);
-			printf("\tChannel #%lu (Ant #%lu, Ant-chan %lu)\n", i/channel_byte_stride, (i/channel_byte_stride)/SYNTH_NCHAN, (i/channel_byte_stride)%SYNTH_NCHAN);
-			test_passed = 0;
-		}	
-	}
-	if(test_passed == 1){
-		printf("FTP Test Passed.\n");
-	}
+	unpack_packet_buffer(
+		databuf_in,
+		databuf_out,
+		effective_payload_per_block,
+		databuf_packet_size,
+		time_byte_stride,
+		channel_byte_stride,
+		copy_packet_payload_to_ftp
+	);
+	verify_unpacked_buffer(
+		databuf_out,
+		PAYLOAD_BYTE_VALUE,
+		effective_block_size,
+		time_per_block,
+		time_byte_stride,
+		channel_byte_stride,
+		"FTP"
+	);
 	
 	// Test: TFP
 	set_output_byte_strides_tfp(time_per_block, &time_byte_stride, &channel_byte_stride);
-	memset(databuf_out, 0, BLOCK_DATA_SIZE);
-	for (size_t i = 0; i < effective_payload_per_block; i++) {
-		p_packet = (struct ata_snap_ibv_pkt *) (databuf_in + i*databuf_packet_size);
-		payload_dest = databuf_out
-			+ p_packet->snaphdr.timestamp*time_byte_stride // offset for time
-			+ (p_packet->snaphdr.feng_id*SYNTH_NCHAN + (p_packet->snaphdr.chan-SYNTH_SCHAN))*channel_byte_stride; // offset for frequency	
-		pkt_payload = (uint8_t *)p_packet->payload;
-		copy_packet_payload_to_tfp(payload_dest, pkt_payload, SYNTH_PKTNCHAN, channel_byte_stride, time_byte_stride);
-	}
-
-	test_passed = 1;
-	for (size_t i = 0; i < effective_block_size && test_passed == 1; i++) {
-		if(databuf_out[i] != PAYLOAD_BYTE_VALUE) {
-			printf("TFP Test failed at byte %lu (%u != %u).\n", i, databuf_out[i], PAYLOAD_BYTE_VALUE);
-			printf("\tTime #%lu (Time-per-block = %lu)\n", i/time_byte_stride, time_per_block);
-			printf("\tChannel #%lu (Ant #%lu, Ant-chan %lu)\n", i/channel_byte_stride, (i/channel_byte_stride)/SYNTH_NCHAN, (i/channel_byte_stride)%SYNTH_NCHAN);
-			test_passed = 0;
-		}	
-	}
-	if(test_passed == 1){
-		printf("TFP Test Passed.\n");
-	}
+	unpack_packet_buffer(
+		databuf_in,
+		databuf_out,
+		effective_payload_per_block,
+		databuf_packet_size,
+		time_byte_stride,
+		channel_byte_stride,
+		copy_packet_payload_to_tfp
+	);
+	verify_unpacked_buffer(
+		databuf_out,
+		PAYLOAD_BYTE_VALUE,
+		effective_block_size,
+		time_per_block,
+		time_byte_stride,
+		channel_byte_stride,
+		"TFP"
+	);
 	
 	// Test: TFP_DP4A
 	set_output_byte_strides_tfp_dp4a(time_per_block, &time_byte_stride, &channel_byte_stride);
-	memset(databuf_out, 0, BLOCK_DATA_SIZE);
-	for (size_t i = 0; i < effective_payload_per_block; i++) {
-		p_packet = (struct ata_snap_ibv_pkt *) (databuf_in + i*databuf_packet_size);
-		payload_dest = databuf_out
-			+ p_packet->snaphdr.timestamp*time_byte_stride // offset for time
-			+ (p_packet->snaphdr.feng_id*SYNTH_NCHAN + (p_packet->snaphdr.chan-SYNTH_SCHAN))*channel_byte_stride; // offset for frequency	
-		pkt_payload = (uint8_t *)p_packet->payload;
-		copy_packet_payload_to_tfp_dp4a(payload_dest, pkt_payload, SYNTH_PKTNCHAN, channel_byte_stride, time_byte_stride);
-	}
-
-	test_passed = 1;
-	for (size_t i = 0; i < effective_block_size && test_passed == 1; i++) {
-		if(databuf_out[i] != PAYLOAD_BYTE_VALUE) {
-			printf("TFP_DP4A Test failed at byte %lu (%u != %u).\n", i, databuf_out[i], PAYLOAD_BYTE_VALUE);
-			printf("\tTime #%lu (Time-per-block = %lu)\n", i/time_byte_stride, time_per_block);
-			printf("\tChannel #%lu (Ant #%lu, Ant-chan %lu)\n", i/channel_byte_stride, (i/channel_byte_stride)/SYNTH_NCHAN, (i/channel_byte_stride)%SYNTH_NCHAN);
-			test_passed = 0;
-		}	
-	}
-	if(test_passed == 1){
-		printf("TFP_DP4A Test Passed.\n");
-	}
+	unpack_packet_buffer(
+		databuf_in,
+		databuf_out,
+		effective_payload_per_block,
+		databuf_packet_size,
+		time_byte_stride,
+		channel_byte_stride,
+		copy_packet_payload_to_tfp_dp4a
+	);
+	verify_unpacked_buffer(
+		databuf_out,
+		PAYLOAD_BYTE_VALUE,
+		effective_block_size,
+		time_per_block,
+		time_byte_stride,
+		channel_byte_stride,
+		"TFP_DP4A"
+	);
 
 	// Close: free memory
 	free(databuf_in);

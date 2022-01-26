@@ -114,11 +114,9 @@ int main(int argc, char* argv[]) {
 	
 	// Tests
 	const packet_unpack_candidate_t candidates[] = {
-		tfp_unpack_candidate,
 		ftp_unpack_candidate,
+		tfp_unpack_candidate,
 		tfp_dp4a_unpack_candidate,
-		tfp_dp4a_direct_unpack_new_candidate,
-		tfp_dp4a_direct_unpack_new_optim_candidate,
 		tfp_dp4a_direct_unpack_candidate
 	};
 
@@ -127,7 +125,7 @@ int main(int argc, char* argv[]) {
 	float timeout_ms = ((float) ts_timeout.tv_sec*1e9 + ts_timeout.tv_nsec)/(1e6);
 
 	size_t nblocks = 0;
-	for (size_t c = 1; c < sizeof(candidates)/sizeof(packet_unpack_candidate_t); c++)
+	for (size_t c = 0; c < sizeof(candidates)/sizeof(packet_unpack_candidate_t); c++)
 	{
 		unpack_struct.copy_func = candidates[c].copy_func;
 		unpack_struct.byte_stride_func = candidates[c].byte_stride_func;

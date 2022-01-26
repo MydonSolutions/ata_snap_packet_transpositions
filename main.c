@@ -3,6 +3,10 @@
 #include "tfp.h"
 #include "tfp_dp4a.h"
 
+#include <unistd.h>
+#include <stdio.h>
+#include <fcntl.h>
+
 // The transposition exercised is from a block of ATA SNAP packets,
 // the headers of which specify:
 //    PKTNCHAN(Number of channel in payload)
@@ -16,7 +20,7 @@
 
 #define PAYLOAD_BYTE_VALUE 0x01
 
-#define BLOCK_DATA_SIZE (120*1024*1024)
+#define BLOCK_DATA_SIZE (SYNTH_PACKET_PAYLOAD_BYTE_LENGTH*(2<<14)/16)
 #define XGPU_DATA_SIZE (2*BLOCK_DATA_SIZE)
 
 int verify_unpacked_buffer(
@@ -121,7 +125,7 @@ int main(int argc, char* argv[]) {
 	};
 
   struct timespec ts_timeout = {0};
-	ts_timeout.tv_sec = 10;
+	ts_timeout.tv_sec = 0;
 	float timeout_ms = ((float) ts_timeout.tv_sec*1e9 + ts_timeout.tv_nsec)/(1e6);
 
 	size_t nblocks = 0;
@@ -142,6 +146,61 @@ int main(int argc, char* argv[]) {
 		}
 
 	}
+
+	// Write out a transposition result
+	memset(databuf_in, 0, BLOCK_DATA_SIZE);
+	chan_section_idx = 0;
+	ata_ibv_pkt->snaphdr.timestamp = 0;
+	ata_ibv_pkt->snaphdr.feng_id = 0;
+	for (size_t p = 0; p < effective_payload_per_block; p++)
+	{
+		ata_ibv_pkt->snaphdr.chan = SYNTH_SCHAN + chan_section_idx*SYNTH_PKTNCHAN;
+		for (int pc = 0; pc < SYNTH_PKTNCHAN; pc++){
+			for (int pt = 0; pt < SYNTH_PKTNTIME; pt++){
+				for (int pp = 0; pp < SYNTH_NPOL; pp++){
+					// real
+					ata_ibv_pkt->payload[
+						(((pc*SYNTH_PKTNTIME + pt))*SYNTH_NPOL + pp)*2
+					] = ata_ibv_pkt->snaphdr.feng_id * pc;
+
+					// imag
+					ata_ibv_pkt->payload[
+						(((pc*SYNTH_PKTNTIME + pt))*SYNTH_NPOL + pp)*2 + 1
+					] = ((ata_ibv_pkt->snaphdr.timestamp + pt) % 128) * (pp + 1);
+				}
+			}
+		}
+		memcpy(databuf_in + p*databuf_packet_size, ata_ibv_pkt, databuf_packet_size);
+
+		chan_section_idx++;
+		if (chan_section_idx == SYNTH_NCHAN/SYNTH_PKTNCHAN) {
+			chan_section_idx = 0;
+			ata_ibv_pkt->snaphdr.feng_id++;
+			if (ata_ibv_pkt->snaphdr.feng_id == SYNTH_NANTS) {
+				ata_ibv_pkt->snaphdr.feng_id = 0;
+				ata_ibv_pkt->snaphdr.timestamp += SYNTH_PKTNTIME;
+			}
+		}
+	}
+	
+	unpack_struct.copy_func = tfp_dp4a_unpack_candidate.copy_func;
+	unpack_struct.byte_stride_func = tfp_dp4a_unpack_candidate.byte_stride_func;
+	memset(databuf_out, 0, BLOCK_DATA_SIZE);
+	unpack_packet_buffer(&unpack_struct);
+
+	int fdraw = open("./dump.bin", O_CREAT|O_WRONLY, 0666);
+	uint8_t* buf = databuf_out;
+	size_t bytes_remaining = BLOCK_DATA_SIZE;
+	size_t bytes_written = 0;
+	while(bytes_remaining != 0) {
+	  bytes_written = write(fdraw, buf, bytes_remaining);
+	  if(bytes_written == -1) {
+	    break;
+	  }
+	  bytes_remaining -= bytes_written;
+	  buf += bytes_written;
+	}
+	close(fdraw);
 
 	// Close: free memory
 	free(databuf_in);

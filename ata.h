@@ -22,10 +22,10 @@
 
 // Packet Synthesis definitions
 #define SYNTH_NANTS 4
-#define SYNTH_NCHAN 512
+#define SYNTH_NCHAN 64
 #define SYNTH_NBITS 8
 #define SYNTH_PKTNTIME 16
-#define SYNTH_PKTNCHAN 128
+#define SYNTH_PKTNCHAN 64
 #define SYNTH_NPOL 2
 #define SYNTH_SCHAN 256
 #define SYNTH_OBSNCHAN (SYNTH_NANTS*SYNTH_NCHAN)

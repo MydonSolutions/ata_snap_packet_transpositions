@@ -3,7 +3,7 @@
 
 // to TFP (xGPU-Correlator) input:
 //    [Slowest ---> Fastest]
-//    Time        [0 ... PIPERBLK*PKTNTIME]
+//    Time        [0 ... PIPERBLK]
 //    Channel     [0 ... NCHAN]
 //    Antenna     [0 ... NANT]
 //    POL         [0 ... NPOL]
@@ -21,8 +21,8 @@ static inline void set_output_byte_strides_tfp(
 	size_t *time_byte_stride
 ) {
 	*antenna_byte_stride = ATASNAP_DEFAULT_PKTNPOL*ATASNAP_DEFAULT_SAMPLE_BYTESIZE;
-	*channel_byte_stride = SYNTH_NCHAN*(*antenna_byte_stride);
-	*time_byte_stride = XGPU_NANTS*(*channel_byte_stride);
+	*channel_byte_stride = XGPU_NANTS*(*antenna_byte_stride);
+	*time_byte_stride = SYNTH_NCHAN*(*channel_byte_stride);
 }
 
 static inline void copy_packet_payload_to_tfp(

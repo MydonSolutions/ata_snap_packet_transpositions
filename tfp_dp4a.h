@@ -69,9 +69,9 @@ static inline void copy_packet_payload_to_tfp_dp4a(
 						memcpy(payload_dest +
 							(pkt_time_major_idx * time_stride*4) +
 							pkt_chan_idx * channel_stride +
-							pkt_pol_idx*4*ATASNAP_DEFAULT_SAMPLE_BYTESIZE +
-							c*4*ATASNAP_DEFAULT_SAMPLE_BYTESIZE/2 +
-							pkt_time_minor_idx*ATASNAP_DEFAULT_SAMPLE_BYTESIZE/2,
+							pkt_pol_idx*2*4*sizeof(PKT_DCP_TFP_DP4A_T) +
+							c*4*sizeof(PKT_DCP_TFP_DP4A_T) +
+							pkt_time_minor_idx*sizeof(PKT_DCP_TFP_DP4A_T),
 							
 							pkt_payload++,
 							sizeof(PKT_DCP_TFP_DP4A_T));

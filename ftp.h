@@ -7,7 +7,8 @@
 
 // to FTP input:
 //    [Slowest ---> Fastest]
-//    Channel     [0 ... NANT*NCHAN]
+//    Antenna     [0 ... NANT]
+//    Channel     [0 ... NCHAN]
 //    Time        [0 ... PIPERBLK*PKTNTIME]
 //    POL         [0 ... NPOL]
 //
@@ -15,11 +16,13 @@
 
 static inline void set_output_byte_strides_ftp(
 	const size_t time_per_block,
+	size_t *antenna_byte_stride,
 	size_t *channel_byte_stride,
 	size_t *time_byte_stride
 ) {
 	*time_byte_stride = ATASNAP_DEFAULT_PKTNPOL*ATASNAP_DEFAULT_SAMPLE_BYTESIZE;
 	*channel_byte_stride = time_per_block*(*time_byte_stride);
+	*antenna_byte_stride = SYNTH_NCHAN*(*channel_byte_stride);
 }
 
 static inline void copy_packet_payload_to_ftp(

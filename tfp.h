@@ -4,7 +4,8 @@
 // to TFP (xGPU-Correlator) input:
 //    [Slowest ---> Fastest]
 //    Time        [0 ... PIPERBLK*PKTNTIME]
-//    Channel     [0 ... NANT*NCHAN]
+//    Channel     [0 ... NCHAN]
+//    Antenna     [0 ... NANT]
 //    POL         [0 ... NPOL]
 //
 // The transposition takes each NPOL pols together, i.e. 2x (8re+8im)
@@ -15,15 +16,17 @@
 
 static inline void set_output_byte_strides_tfp(
 	const size_t time_per_block,
+	size_t *antenna_byte_stride,
 	size_t *channel_byte_stride,
 	size_t *time_byte_stride
 ) {
-	*channel_byte_stride = ATASNAP_DEFAULT_PKTNPOL*ATASNAP_DEFAULT_SAMPLE_BYTESIZE;
-	*time_byte_stride = SYNTH_NANTS*SYNTH_NCHAN*(*channel_byte_stride);
+	*antenna_byte_stride = ATASNAP_DEFAULT_PKTNPOL*ATASNAP_DEFAULT_SAMPLE_BYTESIZE;
+	*channel_byte_stride = SYNTH_NCHAN*(*antenna_byte_stride);
+	*time_byte_stride = XGPU_NANTS*(*channel_byte_stride);
 }
 
 static inline void copy_packet_payload_to_tfp(
-	uint8_t*  payload_dest,/*Indexed into [FENG, PKT_SCHAN, PKTIDX, 0, 0]*/
+	uint8_t*  payload_dest,/*Indexed into [PKTIDX, PKT_SCHAN, FENG, 0, 0]*/
 	uint8_t*  pkt_payload,
 	const uint16_t  pkt_nchan,
 	const uint32_t  channel_stride, /*= PIPERBLK*ATASNAP_DEFAULT_PKTIDX_STRIDE/ATASNAP_DEFAULT_PKT_CHAN_BYTE_STRIDE */

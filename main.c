@@ -17,23 +17,28 @@
 #define PAYLOAD_BYTE_VALUE 0x01
 
 #define BLOCK_DATA_SIZE (120*1024*1024)
+#define XGPU_DATA_SIZE (2*BLOCK_DATA_SIZE)
 
 int verify_unpacked_buffer(
 	uint8_t expected_data,
 	packet_unpack_struct_t *unpack_struct,
 	char* title
 ){
-	size_t channel_byte_stride, time_byte_stride;
-  (*(unpack_struct->byte_stride_func))(unpack_struct->time_per_block, &channel_byte_stride, &time_byte_stride);
+	size_t antenna_byte_stride, channel_byte_stride, time_byte_stride;
+  (*(unpack_struct->byte_stride_func))(unpack_struct->time_per_block, &antenna_byte_stride, &channel_byte_stride, &time_byte_stride);
 
 	int test_passed = 1;
 	for (size_t i = 0; i < unpack_struct->effective_block_size && test_passed == 1; i++) {
 		if(unpack_struct->databuf_out[i] != expected_data) {
+			// if(((i/channel_byte_stride)/SYNTH_NCHAN) % XGPU_NANTS >= SYNTH_NANTS) {
+			// 	printf("%ld\n", ((i/channel_byte_stride)/SYNTH_NCHAN) % XGPU_NANTS);
+			// 	continue;
+			// }
 			printf("%s: Test failed at byte %lu (%u != %u).\n", title, i, unpack_struct->databuf_out[i], expected_data);
 			printf("\tTime #%lu (Time-per-block = %lu)\n", i/time_byte_stride, unpack_struct->time_per_block);
 			printf("\tChannel #%lu (Ant #%lu, Ant-chan %lu)\n", i/channel_byte_stride, (i/channel_byte_stride)/SYNTH_NCHAN, (i/channel_byte_stride)%SYNTH_NCHAN);
 			test_passed = 0;
-		}	
+		}
 	}
 	if(test_passed == 1){
 		printf("%s: Test Passed.\n", title);
@@ -69,7 +74,7 @@ int main(int argc, char* argv[]) {
 
 	// Setup: allocate memory
 	databuf_in = malloc(effective_payload_per_block*databuf_packet_size);
-	databuf_out = malloc(BLOCK_DATA_SIZE);
+	databuf_out = malloc(XGPU_DATA_SIZE);
 
 	// Setup: set universal unpack_struct fields 
 	unpack_struct.databuf_in = databuf_in;
@@ -109,18 +114,20 @@ int main(int argc, char* argv[]) {
 	
 	// Tests
 	const packet_unpack_candidate_t candidates[] = {
-		ftp_unpack_candidate,
 		tfp_unpack_candidate,
+		ftp_unpack_candidate,
 		tfp_dp4a_unpack_candidate,
+		tfp_dp4a_direct_unpack_new_candidate,
+		tfp_dp4a_direct_unpack_new_optim_candidate,
 		tfp_dp4a_direct_unpack_candidate
 	};
 
   struct timespec ts_timeout = {0};
-	ts_timeout.tv_sec = 30;
+	ts_timeout.tv_sec = 10;
 	float timeout_ms = ((float) ts_timeout.tv_sec*1e9 + ts_timeout.tv_nsec)/(1e6);
 
 	size_t nblocks = 0;
-	for (size_t c = 0; c < sizeof(candidates)/sizeof(packet_unpack_candidate_t); c++)
+	for (size_t c = 1; c < sizeof(candidates)/sizeof(packet_unpack_candidate_t); c++)
 	{
 		unpack_struct.copy_func = candidates[c].copy_func;
 		unpack_struct.byte_stride_func = candidates[c].byte_stride_func;

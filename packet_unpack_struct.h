@@ -19,6 +19,7 @@ typedef struct {
 		const uint32_t  time_stride);
 	void (*byte_stride_func)(
 		const size_t time_per_block,
+		size_t*  antenna_stride,
 		size_t*  channel_stride,
 		size_t*  time_stride);
 } packet_unpack_struct_t;
@@ -33,6 +34,7 @@ typedef struct {
 		const uint32_t  time_stride);
 	void (*byte_stride_func)(
 		const size_t time_per_block,
+		size_t*  antenna_stride,
 		size_t*  channel_stride,
 		size_t*  time_stride);
 } packet_unpack_candidate_t;

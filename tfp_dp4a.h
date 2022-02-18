@@ -69,9 +69,9 @@ static inline void copy_packet_payload_to_tfp_dp4a(
 						memcpy(payload_dest +
 							(pkt_time_major_idx * time_stride*4) +
 							pkt_chan_idx * channel_stride +
-							pkt_pol_idx*2*4*sizeof(PKT_DCP_TFP_DP4A_T) +
-							c*4*sizeof(PKT_DCP_TFP_DP4A_T) +
-							pkt_time_minor_idx*sizeof(PKT_DCP_TFP_DP4A_T),
+							pkt_pol_idx*4*ATASNAP_DEFAULT_SAMPLE_BYTESIZE +
+							c*4*ATASNAP_DEFAULT_SAMPLE_BYTESIZE/2 +
+							pkt_time_minor_idx*ATASNAP_DEFAULT_SAMPLE_BYTESIZE/2,
 							
 							pkt_payload++,
 							sizeof(PKT_DCP_TFP_DP4A_T));
@@ -107,6 +107,67 @@ static inline void copy_packet_payload_to_tfp_dp4a_direct(
 		}
 	}
 }
+
+#ifdef __SSSE3__
+#include <tmmintrin.h>
+// from
+//    TIME        [0 ... 4]
+//    POL         [0 ... NPOL]
+//    complexity  [real, imag]
+// C0T0P0R C0T0P0I C0T0P1R C0T0P1I			000:031
+// C0T1P0R C0T1P0I C0T1P1R C0T1P1I			032:063
+// C0T2P0R C0T2P0I C0T2P1R C0T2P1I			064:095
+// C0T3P0R C0T3P0I C0T3P1R C0T3P1I			096:127
+// 	00 01 02 03
+// 	04 05 06 07
+// 	08 09 10 11
+// 	12 13 14 15
+//
+// to DP4A
+//    POL         [0 ... NPOL]
+//    complexity  [real, imag]
+//    time_minor  [0 ... 4]
+// C0T0P0R C0T1P0R C0T2P0R C0T1P0R			000:031
+// C0T0P0I C0T1P0I C0T2P0I C0T1P0I			032:063
+// C0T0P1R C0T1P1R C0T2P1R C0T1P1R			064:095
+// C0T0P1I C0T1P1I C0T2P1I C0T1P1I			096:127
+// 	00 04 08 12
+// 	01 05 09 13
+// 	02 06 10 14
+// 	03 07 11 15
+static inline void copy_packet_payload_to_tfp_dp4a_ssse3(
+	uint8_t*  payload_dest,/*Indexed into [PKTIDX, PKT_SCHAN, FENG, 0, 0]*/
+	uint8_t*  pkt_payload,
+	const uint16_t  pkt_nchan,
+	const uint32_t  channel_stride, /*= PIPERBLK*ATASNAP_DEFAULT_PKTIDX_STRIDE/ATASNAP_DEFAULT_PKT_CHAN_BYTE_STRIDE */
+	const uint32_t  time_stride /* Unused as copy strides TIME*POLE */
+) {
+	const __m128i corner_turn_shuffle_mask = _mm_setr_epi8(
+		0, 4,  8, 12,
+		1, 5,  9, 13,
+		2, 6, 10, 14,
+		3, 7, 11, 15
+	);
+
+	__m128i* v_payload_dest = (__m128i*) payload_dest;
+	__m128i* v_pkt_payload = (__m128i*) pkt_payload;
+
+	for(int pkt_chan_idx = 0; pkt_chan_idx < pkt_nchan; pkt_chan_idx++){ 
+		for(int pkt_time_major_idx = 0; pkt_time_major_idx < ATASNAP_DEFAULT_PKTNTIME/4; pkt_time_major_idx++){
+			v_payload_dest[(
+				(pkt_time_major_idx * time_stride*4) +
+				pkt_chan_idx * channel_stride
+			)/16] = _mm_shuffle_epi8(*v_pkt_payload++, corner_turn_shuffle_mask);
+		}
+	}
+}
+
+static packet_unpack_candidate_t tfp_dp4a_ssse3_unpack_candidate = {
+	"TFP_DP4A_SSSE3",
+	copy_packet_payload_to_tfp_dp4a_ssse3,
+	set_output_byte_strides_tfp_dp4a
+};
+#endif // __SSSE3__ support
 
 static packet_unpack_candidate_t tfp_dp4a_unpack_candidate = {
 	"TFP_DP4A",

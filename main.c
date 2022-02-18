@@ -3,10 +3,6 @@
 #include "tfp.h"
 #include "tfp_dp4a.h"
 
-#include <unistd.h>
-#include <stdio.h>
-#include <fcntl.h>
-
 // The transposition exercised is from a block of ATA SNAP packets,
 // the headers of which specify:
 //    PKTNCHAN(Number of channel in payload)
@@ -20,7 +16,7 @@
 
 #define PAYLOAD_BYTE_VALUE 0x01
 
-#define BLOCK_DATA_SIZE (SYNTH_PACKET_PAYLOAD_BYTE_LENGTH*(2<<14)/16)
+#define BLOCK_DATA_SIZE (120*1024*1024)
 #define XGPU_DATA_SIZE (2*BLOCK_DATA_SIZE)
 
 int verify_unpacked_buffer(
@@ -121,11 +117,14 @@ int main(int argc, char* argv[]) {
 		ftp_unpack_candidate,
 		tfp_unpack_candidate,
 		tfp_dp4a_unpack_candidate,
-		tfp_dp4a_direct_unpack_candidate
+		tfp_dp4a_direct_unpack_candidate,
+	#ifdef __SSSE3__
+		tfp_dp4a_ssse3_unpack_candidate
+	#endif
 	};
 
   struct timespec ts_timeout = {0};
-	ts_timeout.tv_sec = 0;
+	ts_timeout.tv_sec = 5;
 	float timeout_ms = ((float) ts_timeout.tv_sec*1e9 + ts_timeout.tv_nsec)/(1e6);
 
 	size_t nblocks = 0;
@@ -147,6 +146,7 @@ int main(int argc, char* argv[]) {
 
 	}
 
+	#if 0
 	// Write out a transposition result
 	memset(databuf_in, 0, BLOCK_DATA_SIZE);
 	chan_section_idx = 0;
@@ -193,14 +193,15 @@ int main(int argc, char* argv[]) {
 	size_t bytes_remaining = BLOCK_DATA_SIZE;
 	size_t bytes_written = 0;
 	while(bytes_remaining != 0) {
-	  bytes_written = write(fdraw, buf, bytes_remaining);
-	  if(bytes_written == -1) {
-	    break;
-	  }
-	  bytes_remaining -= bytes_written;
-	  buf += bytes_written;
+		bytes_written = write(fdraw, buf, bytes_remaining);
+		if(bytes_written == -1) {
+			break;
+		}
+		bytes_remaining -= bytes_written;
+		buf += bytes_written;
 	}
 	close(fdraw);
+	#endif
 
 	// Close: free memory
 	free(databuf_in);

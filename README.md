@@ -5,23 +5,28 @@ Usage is to run `$ make` which cleans, compiles and runs:
 ```
 rm -f *.h.gch *.o
 rm -f main
-gcc -ggdb -fopenmp -fPIC -O3 -Wall -Werror -Wno-error=cpp -fno-strict-aliasing -c ata.h main.c main.h ftp.h tfp.h tfp_dp4a.h packet_unpack_struct.h
-gcc -ggdb -fopenmp -fPIC -O3 -Wall -Werror -Wno-error=cpp -fno-strict-aliasing main.o -o main
+gcc -mssse3 -fopenmp -fPIC -O3 -Wall -Werror -Wno-error=cpp -fno-strict-aliasing -c ata.h main.c main.h ftp.h tfp.h tfp_dp4a.h packet_unpack_struct.h
+gcc -mssse3 -fopenmp -fPIC -O3 -Wall -Werror -Wno-error=cpp -fno-strict-aliasing main.o -o main
 ./main
-Padded-packet size: 8320
-Padded-packet per block: 15123
-Channel sections: 16
-Theoretical payloads per block: 15360
-Effective payloads per block: 15360
+Padded-packet size: 4224
+Padded-packet per block: 29789
+Channel sections: 4
+Theoretical payloads per block: 30720
+Effective payloads per block: 30720
 Using 100.00% of BLOCK_DATA_SIZE (125829120/125829120).
-Time per block: 15360
+Time per block: 122880
 
 FTP: Test Passed.
-FTP: 492 blocks in 10000.000 ms (20.325 ms per block)
+FTP: 232 blocks in 5000.000 ms (21.552 ms per block)
 TFP: Test Passed.
-TFP: 86 blocks in 10000.000 ms (116.279 ms per block)
+TFP: 129 blocks in 5000.000 ms (38.760 ms per block)
 TFP_DP4A: Test Passed.
-TFP_DP4A: 250 blocks in 10000.000 ms (40.000 ms per block)
+TFP_DP4A: 114 blocks in 5000.000 ms (43.860 ms per block)
+TFP_DP4A_DIRECT: Test Passed.
+TFP_DP4A_DIRECT: 115 blocks in 5000.000 ms (43.478 ms per block)
+TFP_DP4A_SSSE3: Test Passed.
+TFP_DP4A_SSSE3: 346 blocks in 5000.000 ms (14.451 ms per block)
+rm -f *.h.gch *.o
 ```
 
 Interestingly enough the more intensive DP4A transposition is faster than that of the TFP.

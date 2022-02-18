@@ -1,5 +1,5 @@
 GCC				= gcc
-CFLAGS =  -ggdb -fopenmp -fPIC -O3 -Wall -Werror -Wno-error=cpp -fno-strict-aliasing
+CFLAGS =  -mssse3 -fopenmp -fPIC -O3 -Wall -Werror -Wno-error=cpp -fno-strict-aliasing
 
 anew: clean run clean_build
 	rm -f *.h.gch *.o

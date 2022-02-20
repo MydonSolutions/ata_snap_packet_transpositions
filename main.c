@@ -3,6 +3,10 @@
 #include "tfp.h"
 #include "tfp_dp4a.h"
 
+#include <unistd.h>
+#include <stdio.h>
+#include <fcntl.h>
+
 // The transposition exercised is from a block of ATA SNAP packets,
 // the headers of which specify:
 //    PKTNCHAN(Number of channel in payload)

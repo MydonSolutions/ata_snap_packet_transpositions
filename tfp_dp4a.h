@@ -110,6 +110,16 @@ static inline void copy_packet_payload_to_tfp_dp4a_direct(
 
 #ifdef __SSSE3__
 #include <tmmintrin.h>
+// https://stackoverflow.com/a/35268748
+#define CHAR_AS_LONGLONG(a) (((long long)a) & 0xFF)
+#define LL_SETR_EPI8(a, b, c, d, e, f, g, h) \
+    CHAR_AS_LONGLONG(a) | (CHAR_AS_LONGLONG(b) << 8) | \
+    (CHAR_AS_LONGLONG(c) << 16) | (CHAR_AS_LONGLONG(d) << 24) | \
+    (CHAR_AS_LONGLONG(e) << 32) | (CHAR_AS_LONGLONG(f) << 40) | \
+    (CHAR_AS_LONGLONG(g) << 48) | (CHAR_AS_LONGLONG(h) << 56)
+#define _MM_SETR_EPI8(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, aa, ab, ac, ad, ae, af) \
+    {LL_SETR_EPI8(a0, a1, a2, a3, a4, a5, a6, a7), LL_SETR_EPI8(a8, a9, aa, ab, ac, ad, ae, af)}
+
 // from
 //    TIME        [0 ... 4]
 //    POL         [0 ... NPOL]
@@ -135,6 +145,13 @@ static inline void copy_packet_payload_to_tfp_dp4a_direct(
 // 	01 05 09 13
 // 	02 06 10 14
 // 	03 07 11 15
+const __m128i CORNER_TURN_SHUFFLE_MASK = _MM_SETR_EPI8(
+	0, 4,  8, 12,
+	1, 5,  9, 13,
+	2, 6, 10, 14,
+	3, 7, 11, 15
+);
+
 static inline void copy_packet_payload_to_tfp_dp4a_ssse3(
 	uint8_t*  payload_dest,/*Indexed into [PKTIDX, PKT_SCHAN, FENG, 0, 0]*/
 	uint8_t*  pkt_payload,
@@ -142,12 +159,6 @@ static inline void copy_packet_payload_to_tfp_dp4a_ssse3(
 	const uint32_t  channel_stride, /*= PIPERBLK*ATASNAP_DEFAULT_PKTIDX_STRIDE/ATASNAP_DEFAULT_PKT_CHAN_BYTE_STRIDE */
 	const uint32_t  time_stride /* Unused as copy strides TIME*POLE */
 ) {
-	const __m128i corner_turn_shuffle_mask = _mm_setr_epi8(
-		0, 4,  8, 12,
-		1, 5,  9, 13,
-		2, 6, 10, 14,
-		3, 7, 11, 15
-	);
 
 	__m128i* v_payload_dest = (__m128i*) payload_dest;
 	__m128i* v_pkt_payload = (__m128i*) pkt_payload;
@@ -157,7 +168,7 @@ static inline void copy_packet_payload_to_tfp_dp4a_ssse3(
 			v_payload_dest[(
 				(pkt_time_major_idx * time_stride*4) +
 				pkt_chan_idx * channel_stride
-			)/16] = _mm_shuffle_epi8(*v_pkt_payload++, corner_turn_shuffle_mask);
+			)/16] = _mm_shuffle_epi8(*v_pkt_payload++, CORNER_TURN_SHUFFLE_MASK);
 		}
 	}
 }

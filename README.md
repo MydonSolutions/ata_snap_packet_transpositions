@@ -1,7 +1,16 @@
 # ata_snap_packet_transpositions
 Transposition playground for the ATA-SNAP packet payloads ([c:pkt_nchan, t:pkt_ntime=16, p:pkt_npol=2, s:complex{int8_t}]).
 
+# Usage
+
+A large part of the optimisations are accomplished with compilation, so many values are statically defined to this end.
+
+Edits to the scenario can be made as follows:
+- Dimension changes are localised to `SYNTH_*` and `ATASNAP_DEFAULT_PKT*` definitions in `ata.h`
+- Parallelism changes are localised to the `OMP_THREAD_COUNT` definition in `main.h`
+
 Usage is to run `$ make` which cleans, compiles and runs:
+
 ```
 rm -f *.h.gch *.o
 rm -f main
@@ -29,7 +38,9 @@ TFP_DP4A_SSSE3: 346 blocks in 5000.000 ms (14.451 ms per block)
 rm -f *.h.gch *.o
 ```
 
-Interestingly enough the more intensive DP4A transposition is faster than that of the TFP.
+# Results
+
+**Interestingly enough the more intensive DP4A transposition is faster than that of the TFP.**
 
 @luigifcruz has shared some of his print-outs too, showcasing that clang compiled a comparable executable to gcc on the target AMD EPYC 7302 machines:
 

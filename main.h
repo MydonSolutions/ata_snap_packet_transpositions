@@ -9,32 +9,7 @@
 #include <string.h>
 #include <time.h>
 
-#include <netinet/if_ether.h>
-#include <netinet/ip.h>
-#include <netinet/udp.h>
-
-struct __attribute__ ((__packed__)) link_layer_headers {
-  struct ethhdr ethhdr; //0
-  struct iphdr iphdr;   //14
-  struct udphdr udphdr; //34
-};
-
-struct __attribute__ ((__packed__)) ata_snap_payload_header {
-  uint8_t version;
-  uint8_t type;
-  uint16_t n_chans;
-  uint16_t chan;
-  uint16_t feng_id;
-  uint64_t timestamp;
-};
-
-struct __attribute__ ((__packed__)) ata_snap_ibv_pkt {
-  struct link_layer_headers ll_headers; // 0
-  uint8_t pad0[22];     //42
-  struct ata_snap_payload_header snaphdr;      //64
-  uint8_t pad1[48];     //80
-	uint8_t payload[];    //128
-};
+#define OMP_THREAD_COUNT 8
 
 static inline size_t unpack_packet_buffer_repeatedly(
 	packet_unpack_struct_t *unpack_struct,
@@ -56,6 +31,12 @@ static inline size_t unpack_packet_buffer_repeatedly(
 
   size_t nrounds = 0;
   do{
+    #pragma omp parallel for private (\
+      p_packet,\
+      pkt_payload,\
+      payload_dest,\
+    )\
+    num_threads (OMP_THREAD_COUNT)
     for (size_t i = 0; i < unpack_struct->effective_payload_per_block; i++) {
       p_packet = (struct ata_snap_ibv_pkt *) (unpack_struct->databuf_in + i*unpack_struct->databuf_packet_size);
       payload_dest = unpack_struct->databuf_out

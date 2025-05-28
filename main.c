@@ -20,8 +20,8 @@
 
 #define PAYLOAD_BYTE_VALUE 0x01
 
-#define BLOCK_DATA_SIZE (120*1024*1024)
-#define XGPU_DATA_SIZE (2*BLOCK_DATA_SIZE)
+#define BLOCK_DATA_SIZE (SYNTH_NANTS*SYNTH_NCHAN*BLOCK_NTIME*SYNTH_NPOL*2*SYNTH_NBITS/8)
+#define XGPU_DATA_SIZE (2*BLOCK_DATA_SIZE) // to accommodate baseline permutation
 
 int verify_unpacked_buffer(
 	uint8_t expected_data,
